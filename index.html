@@ -169,12 +169,15 @@ const CLIENT_ID = "583511505299-laj063nhfd3bn4jqr852fpvkorfnln79.apps.googleuser
 const SHARED_FOLDER_ID = "1QjZGvu2jm4REo0zOMJH7JXjEX-CVpvQi";
 const SCOPES = "https://www.googleapis.com/auth/drive";
 
-const CLASS_TYPES = ["Danny Teaching","Kids (Young)","Kids (Older)","Adults"];
+const CLASS_TYPES = ["Danny","Kids (Young)","Kids (Older)","Adults","Belt Promotions","Tournaments","Parties"];
 const CONTENT_TYPES = {
-  "Danny Teaching":["Kids (Young)","Kids (Older)","Adults"],
-  "Kids (Young)":["Belt Promotions","Sparring","Warmups","Technique","Drilling","Tournaments","Parties"],
-  "Kids (Older)":["Belt Promotions","Sparring","Warmups","Technique","Drilling","Tournaments","Parties"],
-  "Adults":["Belt Promotions","Sparring","Warmups","Technique","Drilling","Tournaments","Parties"],
+  "Danny":["Technique","Speeches → Kids","Speeches → Adults","B-Roll","Kid Moments"],
+  "Kids (Young)":["Warmups/Stretching","Technique Teaching","Technique Practice","Sparring","Games","Miscellaneous"],
+  "Kids (Older)":["Sparring","Warmups","Technique Teaching","Technique Practice","Drilling","Miscellaneous"],
+  "Adults":["Sparring","Warmups","Technique Teaching","Technique Practice","Drilling","Miscellaneous"],
+  "Belt Promotions":["Kids (Young)","Kids (Older)","Adults"],
+  "Tournaments":null,
+  "Parties":null,
 };
 
 let token = null;
@@ -294,8 +297,14 @@ async function handleOrganize() {
       document.getElementById("progress-file").textContent = f.name;
       document.getElementById("progress-bar").style.width = `${(i/tagged.length)*100}%`;
       document.getElementById("progress-count").textContent = `${i} / ${tagged.length}`;
-      const parentId = await findOrCreateFolder(f.tagged.class, SHARED_FOLDER_ID, cache);
-      const folderId = await findOrCreateFolder(f.tagged.content, parentId, cache);
+      let folderId;
+      if (!CONTENT_TYPES[f.tagged.class]) {
+        // Flat folder — no subcategory (Tournaments, Parties)
+        folderId = await findOrCreateFolder(f.tagged.class, SHARED_FOLDER_ID, cache);
+      } else {
+        const parentId = await findOrCreateFolder(f.tagged.class, SHARED_FOLDER_ID, cache);
+        folderId = await findOrCreateFolder(f.tagged.content, parentId, cache);
+      }
       if (f.isLocal) {
         const meta={name:f.name,parents:[folderId]};
         const form=new FormData();
@@ -310,6 +319,8 @@ async function handleOrganize() {
     document.getElementById("progress-bar").style.width = "100%";
     document.getElementById("progress-count").textContent = `${tagged.length} / ${tagged.length}`;
     showToast(`✓ ${tagged.length} files organized!`);
+    // Clear uploaded files that were just organized
+    if (currentTab==="upload") newFiles = newFiles.filter(f=>!f.tagged);
     setTimeout(()=>loadFiles(),1500);
   } catch(e) {
     showToast("⚠️ " + e.message);
@@ -321,8 +332,19 @@ async function handleOrganize() {
 // ── Upload ────────────────────────────────────────────────────────────────────
 
 function handleUpload(e) {
-  const newF = Array.from(e.target.files).map(f=>({id:`local-${f.name}-${Date.now()}`,name:f.name,mimeType:f.type,isLocal:true,localFile:f,tagged:null}));
+  const allowed = Array.from(e.target.files).filter(f=>f.type.includes("image/")||f.type.includes("video/"));
+  const blocked = e.target.files.length - allowed.length;
+  if (blocked>0) showToast(`⚠️ ${blocked} file(s) skipped — only photos and videos allowed`);
+  if (!allowed.length) return;
+  const newF = allowed.map(f=>({id:`local-${f.name}-${Date.now()}`,name:f.name,mimeType:f.type,isLocal:true,localFile:f,tagged:null}));
   newFiles = [...newFiles, ...newF];
+  // Auto-enter select mode and select all new files
+  isSelecting = true;
+  selectedIds = new Set(newFiles.map(f=>f.id));
+  document.getElementById("select-btn").style.background="#E8C97A";
+  document.getElementById("select-btn").style.color="#1a1a1a";
+  document.getElementById("select-btn").textContent="Cancel";
+  document.getElementById("select-bar").style.display="flex";
   renderFiles();
 }
 
@@ -476,6 +498,13 @@ function selectClass(cls) {
     if(btn){btn.style.background=ct===cls?"#E8C97A":"#2C2C2E";btn.style.color=ct===cls?"#1a1a1a":"#F5F5F5";}
   });
   const section = document.getElementById("content-section");
+  // If no subcategories (Tournaments, Parties), skip content selection
+  if (!CONTENT_TYPES[cls]) {
+    selectedContent = cls; // use the folder name itself
+    section.style.display="none";
+    checkSaveReady();
+    return;
+  }
   section.style.display="block";
   document.getElementById("content-buttons").innerHTML = CONTENT_TYPES[cls].map(co=>`
     <button class="pill" onclick="selectContent('${co}')" id="cnt-${co.replace(/[^a-z]/gi,'')}" style="background:#2C2C2E;color:#F5F5F5;">${co}</button>
