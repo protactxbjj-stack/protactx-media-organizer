@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ProTactX BJJ Media Organizer</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:#0A0A0A;color:#F5F5F5;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;max-width:480px;margin:0 auto;min-height:100vh;}
+    .belt{display:flex;height:4px;width:100%;border-radius:2px;overflow:hidden;}
+    .belt div{flex:1;}
+    button{font-family:inherit;cursor:pointer;}
+    .pill{border:none;border-radius:20px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;}
+    .card{background:#1C1C1E;border-radius:12px;padding:12px 14px;border:1px solid #2C2C2E;display:flex;align-items:center;gap:10px;margin-bottom:8px;transition:all 0.15s;}
+    .card.selected{background:#2A2A1A;border-color:#E8C97A;}
+    .checkbox{width:22px;height:22px;border-radius:50%;flex-shrink:0;border:2px solid #3A3A3C;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;}
+    .checkbox.checked{border-color:#E8C97A;background:#E8C97A;color:#1a1a1a;font-weight:800;font-size:12px;}
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:flex-end;justify-content:center;z-index:100;}
+    .modal{background:#1C1C1E;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px;border:1px solid #2C2C2E;}
+    .progress-bg{position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;padding:32px;}
+    .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1C1C1E;border:1px solid #2C2C2E;border-radius:12px;padding:12px 20px;font-size:13px;font-weight:600;white-space:nowrap;z-index:50;}
+    .stat{flex:1;background:#1C1C1E;border-radius:10px;padding:10px;text-align:center;}
+    .stat .val{font-size:20px;font-weight:800;}
+    .stat .lbl{color:#8E8E93;font-size:11px;margin-top:1px;}
+    #signin-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px;text-align:center;}
+    #main-screen{display:none;padding-bottom:120px;}
+  </style>
+</head>
+<body>
+
+<!-- SIGN IN SCREEN -->
+<div id="signin-screen">
+  <div class="belt">
+    <div style="background:#FFFFFF"></div>
+    <div style="background:#E8C97A"></div>
+    <div style="background:#4A90D9"></div>
+    <div style="background:#6B4C9A"></div>
+    <div style="background:#C0392B"></div>
+    <div style="background:#1a1a1a"></div>
+  </div>
+  <div style="margin-top:40px;color:#E8C97A;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;">ProTactX BJJ</div>
+  <div style="font-size:40px;margin:16px 0 8px;">🥋</div>
+  <h1 style="font-size:26px;font-weight:800;letter-spacing:-0.5px;margin-bottom:12px;">Media Organizer</h1>
+  <p style="color:#8E8E93;font-size:14px;line-height:1.6;margin-bottom:40px;max-width:300px;">
+    Sign in with Google to access the shared ProTactX drive, tag content, and keep everything organized.
+  </p>
+  <button id="signin-btn" onclick="signIn()" style="background:#fff;color:#1a1a1a;border:none;border-radius:14px;padding:16px 28px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px;box-shadow:0 2px 12px rgba(0,0,0,0.3);">
+    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    Sign in with Google
+  </button>
+  <div id="signin-error" style="margin-top:20px;color:#FF453A;font-size:13px;"></div>
+</div>
+
+<!-- MAIN SCREEN -->
+<div id="main-screen">
+  <!-- Header -->
+  <div style="padding:24px 20px 0;">
+    <div class="belt">
+      <div style="background:#FFFFFF"></div>
+      <div style="background:#E8C97A"></div>
+      <div style="background:#4A90D9"></div>
+      <div style="background:#6B4C9A"></div>
+      <div style="background:#C0392B"></div>
+      <div style="background:#1a1a1a"></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;">
+      <div>
+        <div style="color:#E8C97A;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;">ProTactX BJJ</div>
+        <h1 style="font-size:22px;font-weight:800;margin-top:2px;letter-spacing:-0.5px;">Media Organizer</h1>
+      </div>
+      <div style="text-align:right;">
+        <div id="user-name" style="color:#8E8E93;font-size:11px;margin-bottom:4px;"></div>
+        <button onclick="signOut()" style="background:#2C2C2E;color:#8E8E93;border:none;border-radius:8px;padding:5px 10px;font-size:11px;">Sign out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div style="display:flex;gap:8px;padding:16px 20px 0;">
+    <button id="tab-existing" onclick="switchTab('existing')" style="flex:1;padding:10px;border-radius:10px;background:#E8C97A;color:#1a1a1a;border:none;font-size:13px;font-weight:700;">Existing Files</button>
+    <button id="tab-upload" onclick="switchTab('upload')" style="flex:1;padding:10px;border-radius:10px;background:#1C1C1E;color:#8E8E93;border:none;font-size:13px;font-weight:700;">Upload New</button>
+  </div>
+
+  <div style="padding:0 20px;">
+    <!-- Upload zone -->
+    <div id="upload-zone" style="display:none;border:2px dashed #3A3A3C;border-radius:16px;padding:36px 24px;text-align:center;cursor:pointer;background:#1C1C1E;margin-top:20px;margin-bottom:16px;" onclick="document.getElementById('file-input').click()">
+      <div style="font-size:36px;margin-bottom:10px;">📁</div>
+      <div style="color:#F5F5F5;font-size:15px;font-weight:600;margin-bottom:4px;">Add New Content</div>
+      <div style="color:#8E8E93;font-size:13px;">Tag first, then upload to the right folder</div>
+      <input id="file-input" type="file" multiple accept="image/*,video/*" onchange="handleUpload(event)" style="display:none;"/>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:flex;gap:8px;margin-top:20px;margin-bottom:14px;">
+      <div class="stat"><div class="val" id="stat-total">0</div><div class="lbl">Total</div></div>
+      <div class="stat"><div class="val" style="color:#30D158;" id="stat-tagged">0</div><div class="lbl">Tagged</div></div>
+      <div class="stat"><div class="val" style="color:#E8C97A;" id="stat-left">0</div><div class="lbl">Left</div></div>
+      <div class="stat" onclick="loadFiles()" style="cursor:pointer;min-width:44px;">
+        <div class="val" id="refresh-icon">🔄</div><div class="lbl">Refresh</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <div style="display:flex;gap:4px;flex:1;">
+        <button onclick="setFilter('all')" id="filter-all" style="padding:5px 10px;border-radius:20px;border:none;background:#2C2C2E;color:#F5F5F5;font-size:12px;font-weight:600;">All</button>
+        <button onclick="setFilter('untagged')" id="filter-untagged" style="padding:5px 10px;border-radius:20px;border:none;background:transparent;color:#8E8E93;font-size:12px;font-weight:600;">Untagged</button>
+        <button onclick="setFilter('tagged')" id="filter-tagged" style="padding:5px 10px;border-radius:20px;border:none;background:transparent;color:#8E8E93;font-size:12px;font-weight:600;">Tagged</button>
+      </div>
+      <button id="select-btn" onclick="toggleSelecting()" style="background:#2C2C2E;color:#F5F5F5;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;">Select</button>
+    </div>
+
+    <!-- Select-all bar -->
+    <div id="select-bar" style="display:none;background:#1C1C1E;border-radius:10px;padding:10px 14px;margin-bottom:10px;border:1px solid #2C2C2E;display:none;flex;align-items:center;justify-content:space-between;">
+      <button onclick="selectAll()" style="background:none;border:none;color:#E8C97A;font-size:13px;font-weight:600;padding:0;" id="select-all-btn">Select All</button>
+      <button id="tag-selected-btn" onclick="tagSelected()" style="display:none;background:#E8C97A;color:#1a1a1a;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;">Tag Selected</button>
+    </div>
+
+    <!-- File list -->
+    <div id="file-list"></div>
+    <div id="empty-state" style="text-align:center;padding:40px 0;color:#8E8E93;display:none;">No files found</div>
+    <div id="loading-state" style="text-align:center;padding:40px 0;color:#8E8E93;">Loading your files…</div>
+  </div>
+</div>
+
+<!-- TAG MODAL -->
+<div id="tag-modal" class="modal-bg" style="display:none;">
+  <div class="modal">
+    <div style="color:#E8C97A;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;" id="modal-title">Tagging files</div>
+    <div style="margin-bottom:16px;">
+      <div style="color:#8E8E93;font-size:11px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">Class Type</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;" id="class-buttons"></div>
+    </div>
+    <div id="content-section" style="margin-bottom:24px;display:none;">
+      <div style="color:#8E8E93;font-size:11px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">Content</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;" id="content-buttons"></div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeModal()" style="flex:1;background:#2C2C2E;color:#F5F5F5;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:600;">Cancel</button>
+      <button id="save-tag-btn" onclick="saveTag()" disabled style="flex:2;background:#2C2C2E;color:#8E8E93;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;">Tag Files</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS OVERLAY -->
+<div id="progress-overlay" class="progress-bg" style="display:none;">
+  <div style="font-size:40px;margin-bottom:16px;">🥋</div>
+  <div style="font-size:18px;font-weight:700;margin-bottom:8px;">Organizing files…</div>
+  <div id="progress-file" style="color:#8E8E93;font-size:13px;margin-bottom:20px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+  <div style="width:100%;max-width:280px;background:#2C2C2E;border-radius:8px;height:6px;">
+    <div id="progress-bar" style="width:0%;background:#E8C97A;height:100%;border-radius:8px;transition:width 0.3s;"></div>
+  </div>
+  <div id="progress-count" style="color:#8E8E93;font-size:12px;margin-top:10px;">0 / 0</div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast" style="display:none;"></div>
+
+<!-- ORGANIZE BUTTON -->
+<div id="organize-bar" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:16px 20px;background:linear-gradient(transparent,#0A0A0A 30%);padding-top:32px;">
+  <button onclick="handleOrganize()" style="width:100%;background:#E8C97A;color:#1a1a1a;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;letter-spacing:-0.3px;" id="organize-btn">
+    Organize Files in Drive →
+  </button>
+</div>
+
+<script>
+const CLIENT_ID = "583511505299-laj063nhfd3bn4jqr852fpvkorfnln79.apps.googleusercontent.com";
+const SHARED_FOLDER_ID = "1QjZGvu2jm4REo0zOMJH7JXjEX-CVpvQi";
+const SCOPES = "https://www.googleapis.com/auth/drive";
+
+const CLASS_TYPES = ["Danny Teaching","Kids (Young)","Kids (Older)","Adults"];
+const CONTENT_TYPES = {
+  "Danny Teaching":["Kids (Young)","Kids (Older)","Adults"],
+  "Kids (Young)":["Belt Promotions","Sparring","Warmups","Technique","Drilling","Tournaments","Parties"],
+  "Kids (Older)":["Belt Promotions","Sparring","Warmups","Technique","Drilling","Tournaments","Parties"],
+  "Adults":["Belt Promotions","Sparring","Warmups","Technique","Drilling","Tournaments","Parties"],
+};
+
+let token = null;
+let allFiles = [];
+let newFiles = [];
+let selectedIds = new Set();
+let isSelecting = false;
+let currentFilter = "all";
+let currentTab = "existing";
+let selectedClass = "";
+let selectedContent = "";
+let taggingIds = [];
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+function signIn() {
+  // Use redirect flow for mobile compatibility
+  const redirectUri = window.location.origin + window.location.pathname;
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: "token",
+    scope: SCOPES,
+    include_granted_scopes: "true",
+  });
+  window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString();
+}
+
+function signOut() {
+  if (token) fetch(`https://accounts.google.com/o/oauth2/revoke?token=${token}`);
+  token = null;
+  allFiles = [];
+  selectedIds = new Set();
+  window.location.hash = "";
+  document.getElementById("signin-screen").style.display = "flex";
+  document.getElementById("main-screen").style.display = "none";
+}
+
+function checkRedirectToken() {
+  const hash = window.location.hash.substring(1);
+  const params = new URLSearchParams(hash);
+  if (params.get("access_token")) {
+    token = params.get("access_token");
+    window.history.replaceState(null, "", window.location.pathname);
+    showMain();
+    loadFiles();
+  }
+}
+
+async function showMain() {
+  document.getElementById("signin-screen").style.display = "none";
+  document.getElementById("main-screen").style.display = "block";
+  // Get user info
+  try {
+    const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {headers:{Authorization:`Bearer ${token}`}});
+    const u = await res.json();
+    document.getElementById("user-name").textContent = u.name || u.email || "";
+  } catch(e){}
+}
+
+// ── Drive API ─────────────────────────────────────────────────────────────────
+
+async function driveGet(url) {
+  const res = await fetch(url, {headers:{Authorization:`Bearer ${token}`}});
+  if (!res.ok) throw new Error(`Drive error ${res.status}`);
+  return res.json();
+}
+
+async function loadFiles() {
+  document.getElementById("loading-state").style.display = "block";
+  document.getElementById("refresh-icon").textContent = "⏳";
+  try {
+    let all = [], pageToken = "";
+    do {
+      const q = encodeURIComponent(`'${SHARED_FOLDER_ID}' in parents and (mimeType contains 'image/' or mimeType contains 'video/') and trashed=false`);
+      const url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=nextPageToken,files(id,name,mimeType,parents)&pageSize=100${pageToken?`&pageToken=${pageToken}`:""}`;
+      const data = await driveGet(url);
+      // Preserve existing tags
+      const existingTags = {};
+      allFiles.forEach(f => { if(f.tagged) existingTags[f.id] = f.tagged; });
+      all = [...all, ...(data.files||[]).map(f=>({...f,tagged:existingTags[f.id]||null}))];
+      pageToken = data.nextPageToken || "";
+    } while(pageToken);
+    allFiles = all;
+    showToast(`✓ ${all.length} files loaded`);
+  } catch(e) {
+    showToast("Error loading files: " + e.message);
+  }
+  document.getElementById("loading-state").style.display = "none";
+  document.getElementById("refresh-icon").textContent = "🔄";
+  renderFiles();
+}
+
+async function findOrCreateFolder(name, parentId, cache) {
+  const key = `${name}__${parentId}`;
+  if (cache[key]) return cache[key];
+  const q = encodeURIComponent(`name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`);
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)`,{headers:{Authorization:`Bearer ${token}`}});
+  const data = await res.json();
+  if (data.files?.length) { cache[key]=data.files[0].id; return data.files[0].id; }
+  const cr = await fetch("https://www.googleapis.com/drive/v3/files",{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({name,mimeType:"application/vnd.google-apps.folder",parents:[parentId]})});
+  const cd = await cr.json();
+  cache[key]=cd.id;
+  return cd.id;
+}
+
+async function handleOrganize() {
+  const activeFiles = currentTab==="existing" ? allFiles : newFiles;
+  const tagged = activeFiles.filter(f=>f.tagged);
+  if (!tagged.length) return;
+  document.getElementById("progress-overlay").style.display = "flex";
+  document.getElementById("organize-bar").style.display = "none";
+  const cache = {};
+  try {
+    for (let i=0;i<tagged.length;i++) {
+      const f = tagged[i];
+      document.getElementById("progress-file").textContent = f.name;
+      document.getElementById("progress-bar").style.width = `${(i/tagged.length)*100}%`;
+      document.getElementById("progress-count").textContent = `${i} / ${tagged.length}`;
+      const parentId = await findOrCreateFolder(f.tagged.class, SHARED_FOLDER_ID, cache);
+      const folderId = await findOrCreateFolder(f.tagged.content, parentId, cache);
+      if (f.isLocal) {
+        const meta={name:f.name,parents:[folderId]};
+        const form=new FormData();
+        form.append("metadata",new Blob([JSON.stringify(meta)],{type:"application/json"}));
+        form.append("file",f.localFile);
+        await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",{method:"POST",headers:{Authorization:`Bearer ${token}`},body:form});
+      } else {
+        const cp = f.parents?.[0]||SHARED_FOLDER_ID;
+        await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?addParents=${folderId}&removeParents=${cp}&fields=id`,{method:"PATCH",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({})});
+      }
+    }
+    document.getElementById("progress-bar").style.width = "100%";
+    document.getElementById("progress-count").textContent = `${tagged.length} / ${tagged.length}`;
+    showToast(`✓ ${tagged.length} files organized!`);
+    setTimeout(()=>loadFiles(),1500);
+  } catch(e) {
+    showToast("⚠️ " + e.message);
+  }
+  document.getElementById("progress-overlay").style.display = "none";
+  updateOrganizeBar();
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+
+function handleUpload(e) {
+  const newF = Array.from(e.target.files).map(f=>({id:`local-${f.name}-${Date.now()}`,name:f.name,mimeType:f.type,isLocal:true,localFile:f,tagged:null}));
+  newFiles = [...newFiles, ...newF];
+  renderFiles();
+}
+
+// ── UI ────────────────────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  currentTab = tab;
+  selectedIds = new Set();
+  isSelecting = false;
+  document.getElementById("tab-existing").style.background = tab==="existing"?"#E8C97A":"#1C1C1E";
+  document.getElementById("tab-existing").style.color = tab==="existing"?"#1a1a1a":"#8E8E93";
+  document.getElementById("tab-upload").style.background = tab==="upload"?"#E8C97A":"#1C1C1E";
+  document.getElementById("tab-upload").style.color = tab==="upload"?"#1a1a1a":"#8E8E93";
+  document.getElementById("upload-zone").style.display = tab==="upload"?"block":"none";
+  renderFiles();
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  ["all","untagged","tagged"].forEach(x=>{
+    const btn = document.getElementById(`filter-${x}`);
+    btn.style.background = x===f?"#2C2C2E":"transparent";
+    btn.style.color = x===f?"#F5F5F5":"#8E8E93";
+  });
+  renderFiles();
+}
+
+function toggleSelecting() {
+  isSelecting = !isSelecting;
+  selectedIds = new Set();
+  document.getElementById("select-btn").style.background = isSelecting?"#E8C97A":"#2C2C2E";
+  document.getElementById("select-btn").style.color = isSelecting?"#1a1a1a":"#F5F5F5";
+  document.getElementById("select-btn").textContent = isSelecting?"Cancel":"Select";
+  document.getElementById("select-bar").style.display = isSelecting?"flex":"none";
+  renderFiles();
+}
+
+function selectAll() {
+  const active = currentTab==="existing"?allFiles:newFiles;
+  const filtered = getFiltered(active);
+  if (selectedIds.size===filtered.length) {
+    selectedIds = new Set();
+  } else {
+    selectedIds = new Set(filtered.map(f=>f.id));
+  }
+  updateSelectBar();
+  renderFiles();
+}
+
+function toggleSelect(id) {
+  selectedIds.has(id)?selectedIds.delete(id):selectedIds.add(id);
+  updateSelectBar();
+  renderFiles();
+}
+
+function updateSelectBar() {
+  const active = currentTab==="existing"?allFiles:newFiles;
+  const filtered = getFiltered(active);
+  const allBtn = document.getElementById("select-all-btn");
+  allBtn.textContent = selectedIds.size===filtered.length&&filtered.length>0?`Deselect All`:`Select All (${filtered.length})`;
+  const tagBtn = document.getElementById("tag-selected-btn");
+  if (selectedIds.size>0) {
+    tagBtn.style.display="block";
+    tagBtn.textContent=`Tag ${selectedIds.size} Selected`;
+  } else {
+    tagBtn.style.display="none";
+  }
+}
+
+function getFiltered(files) {
+  return files.filter(f=>{
+    if (currentFilter==="tagged") return !!f.tagged;
+    if (currentFilter==="untagged") return !f.tagged;
+    return true;
+  });
+}
+
+function renderFiles() {
+  const active = currentTab==="existing"?allFiles:newFiles;
+  const filtered = getFiltered(active);
+  const taggedCount = active.filter(f=>f.tagged).length;
+
+  document.getElementById("stat-total").textContent = active.length;
+  document.getElementById("stat-tagged").textContent = taggedCount;
+  document.getElementById("stat-left").textContent = active.length-taggedCount;
+
+  const list = document.getElementById("file-list");
+  const empty = document.getElementById("empty-state");
+
+  if (filtered.length===0 && active.length>0) {
+    list.innerHTML=""; empty.style.display="block";
+  } else {
+    empty.style.display="none";
+    list.innerHTML = filtered.map(f=>`
+      <div class="card${selectedIds.has(f.id)?" selected":""}" onclick="${isSelecting?`toggleSelect('${f.id}')`:""}" style="cursor:${isSelecting?"pointer":"default"}">
+        <div class="checkbox${selectedIds.has(f.id)?" checked":""}" onclick="event.stopPropagation();toggleSelect('${f.id}')">
+          ${selectedIds.has(f.id)?"✓":""}
+        </div>
+        <div style="font-size:18px;flex-shrink:0;">${f.mimeType?.includes("image")?"🖼️":"🎬"}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="color:#F5F5F5;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</div>
+          <div style="font-size:11px;margin-top:2px;">
+            ${f.tagged?`<span style="color:#30D158;">✓ ${f.tagged.class} → ${f.tagged.content}</span>`:`<span style="color:#8E8E93;">Untagged</span>`}
+          </div>
+        </div>
+        ${!isSelecting?`<button onclick="openTagModal(['${f.id}'])" style="background:${f.tagged?"#2C2C2E":"#E8C97A"};color:${f.tagged?"#8E8E93":"#1a1a1a"};border:none;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;flex-shrink:0;">${f.tagged?"Re-tag":"Tag"}</button>`:""}
+      </div>
+    `).join("");
+  }
+
+  updateSelectBar();
+  updateOrganizeBar();
+}
+
+function updateOrganizeBar() {
+  const active = currentTab==="existing"?allFiles:newFiles;
+  const taggedCount = active.filter(f=>f.tagged).length;
+  const bar = document.getElementById("organize-bar");
+  const btn = document.getElementById("organize-btn");
+  bar.style.display = taggedCount>0?"block":"none";
+  btn.textContent = `Organize ${taggedCount} Files in Drive →`;
+}
+
+// ── Tag Modal ─────────────────────────────────────────────────────────────────
+
+function tagSelected() {
+  openTagModal(Array.from(selectedIds));
+}
+
+function openTagModal(ids) {
+  taggingIds = ids;
+  selectedClass=""; selectedContent="";
+  document.getElementById("modal-title").textContent = `Tagging ${ids.length} file${ids.length!==1?"s":""}`;
+  document.getElementById("save-tag-btn").textContent = `Tag ${ids.length} File${ids.length!==1?"s":""}`;
+  document.getElementById("save-tag-btn").disabled = true;
+  document.getElementById("save-tag-btn").style.background = "#2C2C2E";
+  document.getElementById("save-tag-btn").style.color = "#8E8E93";
+
+  const classBtns = document.getElementById("class-buttons");
+  classBtns.innerHTML = CLASS_TYPES.map(ct=>`
+    <button class="pill" onclick="selectClass('${ct}')" id="cls-${ct.replace(/[^a-z]/gi,'')}" style="background:#2C2C2E;color:#F5F5F5;">${ct}</button>
+  `).join("");
+  document.getElementById("content-section").style.display="none";
+  document.getElementById("tag-modal").style.display="flex";
+}
+
+function selectClass(cls) {
+  selectedClass=cls; selectedContent="";
+  CLASS_TYPES.forEach(ct=>{
+    const btn = document.getElementById(`cls-${ct.replace(/[^a-z]/gi,'')}`);
+    if(btn){btn.style.background=ct===cls?"#E8C97A":"#2C2C2E";btn.style.color=ct===cls?"#1a1a1a":"#F5F5F5";}
+  });
+  const section = document.getElementById("content-section");
+  section.style.display="block";
+  document.getElementById("content-buttons").innerHTML = CONTENT_TYPES[cls].map(co=>`
+    <button class="pill" onclick="selectContent('${co}')" id="cnt-${co.replace(/[^a-z]/gi,'')}" style="background:#2C2C2E;color:#F5F5F5;">${co}</button>
+  `).join("");
+  checkSaveReady();
+}
+
+function selectContent(co) {
+  selectedContent=co;
+  CONTENT_TYPES[selectedClass].forEach(c=>{
+    const btn=document.getElementById(`cnt-${c.replace(/[^a-z]/gi,'')}`);
+    if(btn){btn.style.background=c===co?"#E8C97A":"#2C2C2E";btn.style.color=c===co?"#1a1a1a":"#F5F5F5";}
+  });
+  checkSaveReady();
+}
+
+function checkSaveReady() {
+  const ready = selectedClass && selectedContent;
+  const btn = document.getElementById("save-tag-btn");
+  btn.disabled = !ready;
+  btn.style.background = ready?"#E8C97A":"#2C2C2E";
+  btn.style.color = ready?"#1a1a1a":"#8E8E93";
+}
+
+function saveTag() {
+  if (!selectedClass||!selectedContent) return;
+  const tag = {class:selectedClass,content:selectedContent};
+  const idSet = new Set(taggingIds);
+  allFiles = allFiles.map(f=>idSet.has(f.id)?{...f,tagged:tag}:f);
+  newFiles = newFiles.map(f=>idSet.has(f.id)?{...f,tagged:tag}:f);
+  selectedIds=new Set(); isSelecting=false;
+  document.getElementById("select-btn").style.background="#2C2C2E";
+  document.getElementById("select-btn").style.color="#F5F5F5";
+  document.getElementById("select-btn").textContent="Select";
+  document.getElementById("select-bar").style.display="none";
+  closeModal();
+  renderFiles();
+}
+
+function closeModal() {
+  document.getElementById("tag-modal").style.display="none";
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+
+function showToast(msg) {
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.style.display="block";
+  setTimeout(()=>t.style.display="none",3000);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+window.addEventListener("load", checkRedirectToken);
+</script>
+</body>
+</html>
